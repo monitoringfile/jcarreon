@@ -1,0 +1,74 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+body {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: #000000;
+  color: #0F172A;
+}
+
+/* White Floating Cards with High-Visibility Visible Borders */
+.light-card {
+  background: #FFFFFF;
+  border-radius: 1rem;
+  box-shadow: 0 4px 15px -2px rgba(0, 0, 0, 0.05), 0 2px 6px -2px rgba(0, 0, 0, 0.03);
+  border: 2px solid #CBD5E1;
+}
+
+/* Vibrant KPI Header Cards copied from top row of image */
+.kpi-card-teal {
+  background: linear-gradient(135deg, #00585A 0%, #006B6C 100%);
+  color: #000000;
+  border-radius: 1rem;
+  border: 2px solid #004D4E;
+}
+
+.kpi-card-cyan {
+  background: linear-gradient(135deg, #00A8B5 0%, #00B4C5 100%);
+  color: #000000;
+  border-radius: 1rem;
+  border: 2px solid #008C97;
+}
+
+.kpi-card-amber {
+  background: linear-gradient(135deg, #E68A00 0%, #F0A000 100%);
+  color: #FFFFFF;
+  border-radius: 1rem;
+  border: 2px solid #C77700;
+}
+
+.kpi-card-orange {
+  background: linear-gradient(135deg, #FF6B00 0%, #FF7A00 100%);
+  color: #FFFFFF;
+  border-radius: 1rem;
+  border: 2px solid #E05D00;
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 9999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #64748B;
+}
+
+/* Table Header Sticky Background */
+th.sticky, td.sticky {
+  background-color: #00585A !important;
+  color: #FFFFFF !important;
+}
+
+/* Smooth Transitions */
+.tab-btn {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}

@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-[#F0F3F5]">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AREA KPI TREND</title>
+  
+  <!-- FAVICON -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='25' fill='%23006B6C'/><path d='M20 70 L40 45 L60 55 L80 25' stroke='white' stroke-width='8' stroke-linecap='round' stroke-linejoin='round' fill='none'/><circle cx='80' cy='25' r='6' fill='%23FF7A00'/></svg>">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- SheetJS for Excel Parsing & Export -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- Chart.js for Visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Firebase App, Auth & Firestore SDKs (Compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="h-full bg-[#F0F3F5] text-slate-900 antialiased selection:bg-teal-200 selection:text-teal-900 flex flex-col">
+
+  <div class="min-h-screen flex flex-col">
+    <!-- Header Banner -->
+    <header class="bg-[#00585A] text-white py-4 px-4 sm:px-6 lg:px-8 shadow-md border-b-4 border-[#004D4E]">
+      <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+        
+        <!-- Brand Logo & Title -->
+        <div class="flex items-center gap-3">
+          <div class="p-2.5 bg-white/10 rounded-xl border border-white/20 text-white">
+            <i class="fa-solid fa-chart-line text-xl text-[#00A8B5]"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="text-xl font-black text-white tracking-tight">AREA KEY PERFORMANCE INDICATOR TREND</h1>
+              <span class="px-2.5 py-0.5 text-[10px] font-extrabold bg-[#00A8B5] text-white rounded-full flex items-center gap-1 shadow-sm">
+                <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span> Sync Active
+              </span>
+            </div>
+            <p class="text-xs text-teal-100 font-medium">Portfolio & PAR Executive Performance Dashboard</p>
+          </div>
+        </div>
+
+        <!-- Controls Bar -->
+        <div class="flex flex-wrap items-center gap-2.5">
+          <!-- Branch Selector -->
+          <div class="flex items-center gap-2 bg-white/15 px-3.5 py-2 rounded-xl border border-white/20 text-xs">
+            <i class="fa-solid fa-building-columns text-[#00A8B5]"></i>
+            <span class="text-teal-100 font-semibold">Branch:</span>
+            <select id="branchFilter" class="bg-transparent font-bold text-white outline-none cursor-pointer pr-1">
+              <option value="ALL" class="bg-[#00585A] text-white">All Area Branches</option>
+            </select>
+          </div>
+
+          <!-- Manage Files Button -->
+          <button onclick="requestAuthForAction('MANAGE_FILES')" class="bg-white/15 hover:bg-white/25 text-white border border-white/20 text-xs font-bold px-3.5 py-2 rounded-xl transition flex items-center gap-2">
+            <i class="fa-solid fa-folder-open text-[#00A8B5]"></i>
+            <span>Files (<span id="totalFileBadgeCount">0</span>)</span>
+          </button>
+
+          <!-- Upload Portfolio Button -->
+          <button onclick="requestAuthForAction('UPLOAD_PORTFOLIO')" class="bg-[#00A8B5] hover:bg-[#008C97] text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow transition flex items-center gap-2 active:scale-95">
+            <i class="fa-solid fa-file-excel"></i>
+            <span>Upload Portfolio</span>
+          </button>
+          <input type="file" id="portfolioFileInput" multiple accept=".xlsx, .xls, .csv" class="hidden" />
+
+          <!-- Upload PAR Button -->
+          <button onclick="requestAuthForAction('UPLOAD_PAR')" class="bg-[#FF7A00] hover:bg-[#E05D00] text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow transition flex items-center gap-2 active:scale-95">
+            <i class="fa-solid fa-file-excel"></i>
+            <span>Upload PAR</span>
+          </button>
+          <input type="file" id="parFileInput" multiple accept=".xlsx, .xls, .csv" class="hidden" />
+
+          <!-- Export Excel Button -->
+          <button onclick="exportToExcel()" class="bg-[#E68A00] hover:bg-[#C77700] text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow transition flex items-center gap-2">
+            <i class="fa-solid fa-download"></i>
+            <span>Export</span>
+          </button>
+
+          <!-- Clear All Button -->
+          <button onclick="requestAuthForAction('CLEAR_ALL')" class="bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-300/30 text-xs font-bold px-3 py-2 rounded-xl transition flex items-center gap-1.5" title="Clear All Stored Data">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+
+          <!-- Auth Status Badge -->
+          <div id="authStatusBadge" class="hidden items-center gap-2 bg-white/20 px-3 py-1.5 rounded-xl border border-white/30 text-[11px] text-white">
+            <i class="fa-solid fa-user-shield text-[#00A8B5]"></i>
+            <span id="authEmailLabel" class="truncate max-w-[120px] font-bold">Admin</span>
+            <button onclick="handleSignOut()" class="text-rose-300 hover:text-white ml-1 font-bold" title="Sign Out">Logout</button>
+          </div>
+        </div>
+
+      </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+      <!-- Toast Notification -->
+      <div id="toast" class="hidden light-card p-4 border-l-4 border-[#00585A] shadow text-xs text-slate-900 font-bold flex justify-between items-center transition-all">
+        <div class="flex items-center gap-2.5">
+          <i id="toastIcon" class="fa-solid fa-circle-info text-[#00585A] text-sm"></i>
+          <span id="toastMsg" class="font-bold">Operation completed successfully.</span>
+        </div>
+        <button onclick="document.getElementById('toast').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- EXECUTIVE VARIANCE & GROWTH CALCULATOR -->
+      <div class="light-card p-6 space-y-5">
+        <div class="flex flex-wrap items-center justify-between gap-4 border-b-2 border-slate-200 pb-4">
+          <div class="flex items-center gap-3">
+            <div class="p-2.5 bg-[#00585A] text-white rounded-xl">
+              <i class="fa-solid fa-calculator text-base"></i>
+            </div>
+            <div>
+              <h2 class="text-base font-black text-slate-900 tracking-tight">Executive Period Growth & Variance Calculator</h2>
+              <p class="text-xs text-slate-600 font-semibold">Automatic real-time calculation breakdown for <span id="calcModeLabel" class="text-[#00585A] font-extrabold">Area Branches</span></p>
+            </div>
+          </div>
+          
+          <div class="flex flex-wrap items-center gap-2.5 text-xs">
+            <div class="flex items-center gap-2 bg-slate-100 px-3.5 py-2 rounded-xl border-2 border-slate-300">
+              <span class="text-slate-600 font-bold">Base Date:</span>
+              <select id="calcBaseDate" class="bg-transparent text-[#00585A] font-extrabold outline-none cursor-pointer">
+                <option value="" class="text-slate-400">Select Base Date</option>
+              </select>
+            </div>
+            <span class="text-slate-400 font-black">&rarr;</span>
+            <div class="flex items-center gap-2 bg-slate-100 px-3.5 py-2 rounded-xl border-2 border-slate-300">
+              <span class="text-slate-600 font-bold">Target Date:</span>
+              <select id="calcTargetDate" class="bg-transparent text-[#00A8B5] font-extrabold outline-none cursor-pointer">
+                <option value="" class="text-slate-400">Select Target Date</option>
+              </select>
+            </div>
+            <button onclick="runCalculator()" class="bg-[#E68A00] hover:bg-[#C77700] text-white font-extrabold px-4 py-2.5 rounded-xl shadow transition-all active:scale-95 flex items-center gap-2 text-xs">
+              <i class="fa-solid fa-bolt"></i>
+              <span>Calculate Variance</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Overall KPI Cards copied from Image top-row layout -->
+        <div id="calcResultsBox" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-1">
+          <!-- Populated dynamically -->
+        </div>
+
+        <!-- Detailed Breakdown Table by Branch / Officer -->
+        <div id="calcTableContainer" class="hidden pt-2">
+          <div class="flex justify-between items-center mb-3">
+            <span class="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+              <i class="fa-solid fa-list-check text-[#00585A]"></i>
+              <span id="calcTableTitle">Variance Breakdown Table</span>
+            </span>
+            <span class="text-[11px] text-slate-500 font-bold">Sorted chronologically</span>
+          </div>
+
+          <div class="overflow-x-auto custom-scrollbar rounded-xl border-2 border-slate-300 shadow-sm">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="bg-[#00585A] text-white font-extrabold border-b-2 border-[#004D4E]">
+                  <th id="calcThFirst" class="py-3 px-3.5 min-w-[180px] sticky left-0 bg-[#00585A] border-r-2 border-[#004D4E]">Branch</th>
+                  <th class="py-3 px-3.5 text-right">Portfolio (Base)</th>
+                  <th class="py-3 px-3.5 text-right">Portfolio (Target)</th>
+                  <th class="py-3 px-3.5 text-right text-emerald-300 font-black border-r-2 border-[#004D4E]">Portfolio Var</th>
+                  <th class="py-3 px-3.5 text-right">PAR (Base)</th>
+                  <th class="py-3 px-3.5 text-right">PAR (Target)</th>
+                  <th class="py-3 px-3.5 text-right text-orange-300 font-black border-r-2 border-[#004D4E]">PAR Var</th>
+                  <th class="py-3 px-3.5 text-right">Ratio (Base)</th>
+                  <th class="py-3 px-3.5 text-right">Ratio (Target)</th>
+                  <th class="py-3 px-3.5 text-right text-amber-300 font-black border-r-2 border-[#004D4E]">Ratio Var</th>
+                  <th class="py-3 px-3.5 text-right">Clients (Base)</th>
+                  <th class="py-3 px-3.5 text-right">Clients (Target)</th>
+                  <th class="py-3 px-3.5 text-right text-cyan-200 font-black">Clients Var</th>
+                </tr>
+              </thead>
+              <tbody id="calcTbody" class="divide-y divide-slate-200 text-slate-900 font-mono">
+              </tbody>
+              <tfoot id="calcTfoot" class="bg-slate-100 font-bold border-t-2 border-slate-400 text-slate-900 font-mono">
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- UNIFIED MASTER METRICS FRAME -->
+      <div class="light-card overflow-hidden">
+        
+        <!-- Tab Navigation Header -->
+        <div class="bg-slate-100 px-5 py-4 border-b-2 border-slate-200 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-2.5">
+            <span class="p-2 bg-[#00585A] text-white rounded-xl">
+              <i class="fa-solid fa-layer-group text-sm"></i>
+            </span>
+            <h2 class="text-base font-black text-slate-900 tracking-tight">Executive Dashboard Matrix</h2>
+          </div>
+
+          <!-- Dynamic Link Tabs -->
+          <div class="flex flex-wrap items-center gap-1.5 bg-slate-200 p-1.5 rounded-xl text-xs font-bold">
+            <button onclick="switchTab('portfolio')" id="tabBtn-portfolio" class="tab-btn px-3.5 py-1.5 rounded-lg transition flex items-center gap-1.5 text-slate-700 hover:text-slate-900">
+              <i class="fa-solid fa-wallet text-[#00585A]"></i>
+              <span>Loan Portfolio</span>
+            </button>
+            <button onclick="switchTab('par')" id="tabBtn-par" class="tab-btn px-3.5 py-1.5 rounded-lg transition flex items-center gap-1.5 text-slate-700 hover:text-slate-900">
+              <i class="fa-solid fa-triangle-exclamation text-[#FF7A00]"></i>
+              <span>PAR Amount</span>
+            </button>
+            <button onclick="switchTab('ratio')" id="tabBtn-ratio" class="tab-btn px-3.5 py-1.5 rounded-lg transition flex items-center gap-1.5 text-slate-700 hover:text-slate-900">
+              <i class="fa-solid fa-percent text-[#E68A00]"></i>
+              <span>PAR Ratio (%)</span>
+            </button>
+            <button onclick="switchTab('accounts')" id="tabBtn-accounts" class="tab-btn px-3.5 py-1.5 rounded-lg transition flex items-center gap-1.5 text-slate-700 hover:text-slate-900">
+              <i class="fa-solid fa-file-invoice text-[#00A8B5]"></i>
+              <span>Total Accounts</span>
+            </button>
+            <button onclick="switchTab('clients')" id="tabBtn-clients" class="tab-btn px-3.5 py-1.5 rounded-lg transition flex items-center gap-1.5 text-slate-700 hover:text-slate-900">
+              <i class="fa-solid fa-users text-[#00585A]"></i>
+              <span>Total Clients</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Sub-Header Description -->
+        <div class="px-5 py-2.5 bg-slate-50 border-b border-slate-200 flex justify-between items-center text-xs text-slate-600">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-circle-info text-[#00585A]"></i>
+            <span id="activeTabDescription" class="font-bold">Viewing dynamic period values matrix</span>
+          </div>
+          <span id="activeTabBadge" class="font-mono text-[10px] px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-800 font-extrabold">Chronologically Sorted</span>
+        </div>
+
+        <!-- Matrix Table -->
+        <div class="overflow-x-auto custom-scrollbar">
+          <table class="w-full text-left border-collapse text-xs table-auto">
+            <thead>
+              <tr id="unifiedThRow" class="bg-[#00585A] text-white font-extrabold border-b-2 border-[#004D4E]">
+                <th class="py-3 px-4 min-w-[200px]">Branch</th>
+                <th class="py-3 px-4 text-center text-teal-100 font-medium italic">No report files loaded</th>
+              </tr>
+            </thead>
+            <tbody id="unifiedTbody" class="divide-y divide-slate-200 text-slate-900 font-mono">
+              <tr>
+                <td colspan="2" class="py-12 text-center text-slate-500 font-sans font-bold">
+                  Upload Portfolio or PAR files to display performance matrix.
+                </td>
+              </tr>
+            </tbody>
+            <tfoot id="unifiedTfoot" class="bg-slate-100 font-bold border-t-2 border-slate-300 text-slate-900 font-mono">
+            </tfoot>
+          </table>
+        </div>
+
+      </div>
+
+      <!-- PERFORMANCE TREND GRAPH -->
+      <div class="light-card p-6 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b-2 border-slate-200 pb-3">
+          <div class="flex items-center gap-3">
+            <div class="p-2.5 bg-[#00585A] text-white rounded-xl">
+              <i class="fa-solid fa-chart-line text-base"></i>
+            </div>
+            <div>
+              <h2 class="text-base font-black text-slate-900 tracking-tight">Performance Trend Multi-Line Graph</h2>
+              <p class="text-xs text-slate-600 font-semibold">Chronological trend lines for <span id="chartTargetLabel" class="text-[#00585A] font-extrabold">All Area Branches</span></p>
+            </div>
+          </div>
+
+          <!-- Chart Switcher -->
+          <div class="flex items-center gap-1 bg-slate-200 p-1 rounded-xl text-xs font-bold">
+            <button onclick="setChartMetric('portfolio')" id="chartMetricBtn-portfolio" class="px-3 py-1 rounded-lg transition text-slate-700">Portfolio</button>
+            <button onclick="setChartMetric('par')" id="chartMetricBtn-par" class="px-3 py-1 rounded-lg transition text-slate-700">PAR Amount</button>
+            <button onclick="setChartMetric('ratio')" id="chartMetricBtn-ratio" class="px-3 py-1 rounded-lg transition text-slate-700">PAR Ratio (%)</button>
+            <button onclick="setChartMetric('clients')" id="chartMetricBtn-clients" class="px-3 py-1 rounded-lg transition text-slate-700">Clients</button>
+          </div>
+        </div>
+
+        <div class="relative w-full h-80 pt-2">
+          <canvas id="analyticsChart"></canvas>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- FIREBASE AUTHENTICATION MODAL -->
+    <div id="authModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
+      <div class="light-card w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden p-6 text-center space-y-4">
+        <div class="p-3 bg-[#00585A] text-white w-12 h-12 rounded-xl mx-auto flex items-center justify-center text-xl">
+          <i class="fa-solid fa-user-lock"></i>
+        </div>
+        <div>
+          <h3 class="text-base font-black text-slate-900">Authorized Access Required</h3>
+          <p class="text-xs text-slate-500 font-medium mt-1">Sign in with your Firebase admin account to modify data.</p>
+        </div>
+
+        <div class="space-y-3 text-left">
+          <div>
+            <label class="block text-[11px] font-extrabold text-slate-600 uppercase tracking-wider mb-1">Email Address</label>
+            <input type="email" id="authEmailInput" placeholder="admin@example.com" class="w-full bg-slate-50 border-2 border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 font-semibold focus:outline-none focus:border-[#00585A]" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-extrabold text-slate-600 uppercase tracking-wider mb-1">Password</label>
+            <input type="password" id="authPasswordInput" placeholder="••••••••" class="w-full bg-slate-50 border-2 border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 font-semibold focus:outline-none focus:border-[#00585A]" />
+          </div>
+          <p id="authErrorMsg" class="text-xs text-rose-600 hidden text-center font-bold"></p>
+        </div>
+
+        <div class="flex gap-2 pt-2">
+          <button onclick="closeAuthModal()" class="w-1/2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs py-2.5 rounded-xl transition">
+            Cancel
+          </button>
+          <button onclick="verifyFirebaseLogin()" class="w-1/2 bg-[#00585A] hover:bg-[#004D4E] text-white font-bold text-xs py-2.5 rounded-xl shadow transition">
+            Sign In
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MANAGE UPLOADED FILES MODAL -->
+    <div id="filesModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
+      <div class="light-card w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+        
+        <div class="px-6 py-4 bg-[#00585A] text-white flex justify-between items-center border-b-2 border-[#004D4E]">
+          <div class="flex items-center gap-2.5">
+            <i class="fa-solid fa-folder-open text-[#00A8B5]"></i>
+            <h3 class="text-sm font-black">Uploaded Files Management (<span id="modalFileTotalCount">0</span>)</h3>
+          </div>
+          <button onclick="closeFilesModal()" class="text-teal-100 hover:text-white p-1 rounded-lg">
+            <i class="fa-solid fa-xmark text-lg"></i>
+          </button>
+        </div>
+
+        <div class="p-6 overflow-y-auto custom-scrollbar grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="space-y-3">
+            <div class="flex justify-between items-center">
+              <h4 class="text-xs font-black uppercase tracking-wider text-[#00585A]">Loan Portfolio Reports (<span id="modalPortfolioCount">0</span>)</h4>
+            </div>
+            <div id="modalPortfolioList" class="space-y-2 max-h-[50vh] overflow-y-auto pr-1">
+              <p class="text-xs text-slate-400 italic">No portfolio files uploaded.</p>
+            </div>
+          </div>
+
+          <div class="space-y-3">
+            <div class="flex justify-between items-center">
+              <h4 class="text-xs font-black uppercase tracking-wider text-[#FF7A00]">PAR Amount Reports (<span id="modalParCount">0</span>)</h4>
+            </div>
+            <div id="modalParList" class="space-y-2 max-h-[50vh] overflow-y-auto pr-1">
+              <p class="text-xs text-slate-400 italic">No PAR files uploaded.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="px-6 py-3 bg-slate-100 border-t-2 border-slate-300 flex justify-end">
+          <button onclick="closeFilesModal()" class="bg-[#00585A] hover:bg-[#004D4E] text-white font-bold text-xs px-5 py-2.5 rounded-xl transition">
+            Close & Apply
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="border-t-2 border-slate-300 bg-white py-4 mt-auto">
+      <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-600 font-bold">
+       Key Performance Indicator Analytics System &bull; North Mindanao District
+      </div>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
